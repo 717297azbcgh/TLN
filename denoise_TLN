@@ -17,12 +17,13 @@ def read_txt(f):
         line = f.readline()
     f.close()
     return data_list
-#简单的初始网络
-X = read_txt(r'D:\文档\MATLAB\lfm_costas_pam4\20210411\sig_get\lfm10g.txt')
-Y_1 = read_txt(r'D:\文档\MATLAB\lfm_costas_pam4\20210411\sig_get\lfm10g_per.txt')
 
 
-lengthx = 21747;
+X = read_txt(r'/home/yisicheng/Documents/downConv/20210411/snr_10g/snr_lfm.txt')
+Y_1 = read_txt(r'/home/yisicheng/Documents/downConv/20210411/snr_10g/snr_lfm_per.txt')
+
+
+lengthx = 32744;
 
 x = tf.placeholder(tf.float32, [None, lengthx],name='x')
 y = tf.placeholder(tf.float32, [None,lengthx],name='y')
@@ -135,16 +136,20 @@ tf.summary.scalar('deconv_6', deconv_6)
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=deconv_6))
 loss = tf.reduce_mean(tf.square(deconv_6-y))
 loss_1 = tf.reduce_mean(tf.square(tf.subtract(deconv_6,y)))
-train_step = tf.train.AdamOptimizer(0.0001).minimize(loss)
+train_step = tf.train.AdamOptimizer(0.001).minimize(loss)
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
+
+data1=open('/home/yisicheng/Documents/downConv/20210411/snr_10g/snr/num300_qianyi_loss.txt','a')  
+data2=open('/home/yisicheng/Documents/downConv/20210411/snr_10g/snr/num300_qianyi_time.txt','a')  
+
 with tf.Session(config=config) as sess:
     ticks1 = time.time()
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
-    steps =200000
+    steps =100000
     saver = tf.train.Saver()
     for i in range(steps):
         start = i*50%300
@@ -154,48 +159,54 @@ with tf.Session(config=config) as sess:
         ticks = time.time()
         if (i)%500 == 0: 
             print("After %d step,loss is %g time use %g"%(i,total_loss,ticks-ticks1))
-        if (i+1)%5000 == 0:
+            data1.write(str(total_loss))
+            data1.write('\n')
+            data2.write(str(ticks-ticks1))
+            data2.write('\n')
+        if (i+1)%1000 == 0:
             total_y_cov = sess.run(deconv_6, feed_dict={x:X[300:350],y:Y_1[300:350],num_wave:np.mat(X[300:350]).shape[0]})  
-            np.savetxt(r'D:\文档\MATLAB\lfm_costas_pam4\20210411\sig_get\lfm10gqianyi\lfm10g\net_out_%d.txt'%(i),total_y_cov,fmt="%g", delimiter=',')
-#             saver.save(sess, 'D:/文档/MATLAB/DownCon/model/0.5csvnetout', global_step=i)
+            np.savetxt(r'/home/yisicheng/Documents/downConv/20210411/snr_10g/snr/net_out_%d.txt'%(i),total_y_cov,fmt="%g", delimiter=',')
+            
             print('save result')
-    w1_final=sess.run(W_conv1)
-    b1_final=sess.run(b_conv1)
-    w2_final=sess.run(W_conv2)
-    b2_final=sess.run(b_conv2)
-    w3_final=sess.run(W_conv3)
-    b3_final=sess.run(b_conv3)
-    w4_final=sess.run(W_conv4)
-    b4_final=sess.run(b_conv4)
-    w5_final=sess.run(W_conv5)
-    b5_final=sess.run(b_conv5)
-    w6_final=sess.run(W_conv6)
-    b6_final=sess.run(b_conv6)
+#    w1_final=sess.run(W_conv1)
+#    b1_final=sess.run(b_conv1)
+#    w2_final=sess.run(W_conv2)
+#    b2_final=sess.run(b_conv2)
+#    w3_final=sess.run(W_conv3)
+#    b3_final=sess.run(b_conv3)
+#    w4_final=sess.run(W_conv4)
+#    b4_final=sess.run(b_conv4)
+#    w5_final=sess.run(W_conv5)
+#    b5_final=sess.run(b_conv5)
+#    w6_final=sess.run(W_conv6)
+#    b6_final=sess.run(b_conv6)
+#    
+#    w7_final=sess.run(W6_add0)
+#    b7_final=sess.run(b6_add0)
+#    w8_final=sess.run(W6_add1)
+#    b8_final=sess.run(b6_add1)
+#    w9_final=sess.run(W6_add)
+#    b9_final=sess.run(b6_add)
+
     
-    w7_final=sess.run(W6_add0)
-    b7_final=sess.run(b6_add0)
-    w8_final=sess.run(W6_add1)
-    b8_final=sess.run(b6_add1)
-    w9_final=sess.run(W6_add)
-    b9_final=sess.run(b6_add)
+data1.close()
+data2.close()
 
-# 本函数用于训练网络，提供网络迁移的原始网络
-
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w1.npy',w1_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b1.npy',b1_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w2.npy',w2_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b2.npy',b2_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w3.npy',w3_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b3.npy',b3_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w4.npy',w4_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b4.npy',b4_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w5.npy',w5_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b5.npy',b5_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w6.npy',w6_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b6.npy',b6_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w7.npy',w7_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b7.npy',b7_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w8.npy',w8_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b8.npy',b8_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_w9.npy',w9_final)
-np.save(r'D:/文档/MATLAB/lfm_costas_pam4/20210411/sig_get/lfm10gqianyi/final_b9.npy',b9_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w1.npy',w1_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b1.npy',b1_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w2.npy',w2_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b2.npy',b2_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w3.npy',w3_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b3.npy',b3_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w4.npy',w4_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b4.npy',b4_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w5.npy',w5_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b5.npy',b5_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w6.npy',w6_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b6.npy',b6_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w7.npy',w7_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b7.npy',b7_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w8.npy',w8_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b8.npy',b8_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_w9.npy',w9_final)
+#np.save(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/qianyi/final_b9.npy',b9_final)
