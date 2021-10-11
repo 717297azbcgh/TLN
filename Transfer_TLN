@@ -1,1 +1,172 @@
 #本函数用于直接读取原始网络参数，并实现迁移学习
+import numpy as np
+import tensorflow as tf
+import csv
+# import matplotlib.pyplot as plt
+import time 
+# import matplotlib.image as mpimg
+from tensorflow import InteractiveSession
+
+def read_txt(f):
+    f = open(f)
+    line = f.readline()
+    data_list = []
+    while line:
+        num = list(map(float,line.split(',')))
+        data_list.append(num)
+        line = f.readline()
+    f.close()
+    return data_list
+
+X = read_txt(r'/home/yisicheng/Documents/downConv/20210411/lfm20g.txt')
+Y_1 = read_txt(r'/home/yisicheng/Documents/downConv/20210411/lfm20g_per.txt')
+
+
+lengthx = 21747;
+
+x = tf.placeholder(tf.float32, [None, lengthx],name='x')
+y = tf.placeholder(tf.float32, [None,lengthx],name='y')
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+def conv2d(x, W):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x, ksize=[1, 1, 1, 1], strides=[1, 1, 1, 1], padding='SAME')
+def floattoint(f):
+    data_list = []
+    for i in range(np.size(f)): 
+        data_list.append(int(f[i][0]))
+    return data_list 
+
+W_conv1 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w1.npy')
+b_conv1 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b1.npy')
+W_conv2 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w2.npy')
+b_conv2 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b2.npy')
+W_conv3 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w3.npy')
+b_conv3 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b3.npy')
+W_conv4 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w4.npy')
+b_conv4 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b4.npy')
+W_conv5 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w5.npy')
+b_conv5 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b5.npy')
+W_conv6 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w6.npy')
+b_conv6 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b6.npy')
+
+W6_add0 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w7.npy')
+b6_add0 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b7.npy')
+W6_add1 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w8.npy')
+b6_add1 = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b8.npy')
+W6_add = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_w9.npy')
+b6_add = np.load('/home/yisicheng/Documents/downConv/20210411/lfm10g/qianyi/final_b9.npy')
+
+
+num_wave = tf.Variable(tf.constant(1),name='input_num')
+
+x_image = tf.reshape(x, [-1, lengthx, 1, 1])
+
+#W_conv1 = weight_variable([3,1,1,8])
+#b_conv1 = bias_variable([8])
+h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+h_pool1 = max_pool_2x2(h_conv1)
+
+
+#W_conv2 = weight_variable([3,1,8,16])
+#b_conv2 = bias_variable([16])
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+h_pool2 = max_pool_2x2(h_conv2)
+
+#W_conv3 = weight_variable([3,1,16,24])
+#b_conv3 = bias_variable([24])
+h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
+h_pool3 = max_pool_2x2(h_conv3)
+
+
+#W_conv4 = weight_variable([3,1,24,28])
+#b_conv4 = bias_variable([28])
+h_conv4 = tf.nn.relu(conv2d(h_pool3, W_conv4) + b_conv4)
+h_pool4 = max_pool_2x2(h_conv4)
+
+#W_conv5 = weight_variable([3,1,28,56])
+#b_conv5 = bias_variable([56])
+h_conv5 = tf.nn.relu(conv2d(h_pool4, W_conv5) + b_conv5)
+h_pool5 = max_pool_2x2(h_conv5)
+
+#W_conv6 = weight_variable([3,1,56,64])
+#b_conv6 = bias_variable([64])
+h_conv6 = tf.nn.relu(conv2d(h_pool5, W_conv6) + b_conv6)
+h_pool6 = max_pool_2x2(h_conv6)
+
+
+
+W6_add0 = weight_variable([3,1,56,64])
+b6_add0 = bias_variable([64])
+deconv_add0 = tf.nn.conv2d_transpose(h_pool6 - b6_add0, W6_add0, [num_wave, lengthx, 1, 56], strides=[1, 1, 1, 1], padding='SAME')
+
+W6_add1 = weight_variable([3,1,28,56])
+b6_add1 = bias_variable([56])
+deconv_add1 = tf.nn.conv2d_transpose(deconv_add0 - b6_add1, W6_add1, [num_wave, lengthx, 1, 28], strides=[1, 1, 1, 1], padding='SAME')
+
+W6_add = weight_variable([3,1,20,28])
+b6_add = bias_variable([28])
+deconv_3 = tf.nn.conv2d_transpose(deconv_add1 - b6_add, W6_add, [num_wave, lengthx, 1, 20], strides=[1, 1, 1, 1], padding='SAME')
+
+W7 = weight_variable([3,1,16,20])
+b7 = bias_variable([20])
+deconv_4 = tf.nn.conv2d_transpose(deconv_3 - b7, W7, [num_wave, lengthx, 1, 16], strides=[1, 1, 1, 1], padding='SAME')
+
+W8 = weight_variable([3,1,8,16])
+b8 = bias_variable([16])
+deconv_5 = tf.nn.conv2d_transpose(deconv_4 - b8, W8, [num_wave, lengthx, 1, 8], strides=[1, 1, 1, 1], padding='SAME')
+
+W9 = weight_variable([3,1,1,8])
+b9 = bias_variable([8])
+deconv_6 = tf.nn.conv2d_transpose(deconv_5- b9, W9, [num_wave, lengthx, 1, 1], strides=[1, 1, 1, 1], padding='SAME')
+
+deconv_6 = tf.reshape(deconv_6, [-1, lengthx])
+tf.summary.scalar('deconv_6', deconv_6)
+
+cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=deconv_6))
+loss = tf.reduce_mean(tf.square(deconv_6-y))
+loss_1 = tf.reduce_mean(tf.square(tf.subtract(deconv_6,y)))
+train_step = tf.train.AdamOptimizer(0.001).minimize(loss)
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+data1=open('/home/yisicheng/Documents/downConv/20210411/100-300/lfm/lfm10g-lfm20g/num75/num75_qianyi_loss.txt','a')  
+data3=open('/home/yisicheng/Documents/downConv/20210411/100-300/lfm/lfm10g-lfm20g/num75/num75_qianyi_loss_test.txt','a')  
+data2=open('/home/yisicheng/Documents/downConv/20210411/100-300/lfm/lfm10g-lfm20g/num75/num75_qianyi_time.txt','a')  
+with tf.Session(config=config) as sess:
+    ticks1 = time.time()
+    init_op = tf.global_variables_initializer()
+    sess.run(init_op)
+    steps =50000
+    saver = tf.train.Saver()
+    for i in range(steps):
+        start = i*50%300
+        end = min(start + 50,300)
+        sess.run (train_step, feed_dict={x:X[200+0:200+75],y:Y_1[200+0:200+75],num_wave:np.mat(X[200+0:200+75]).shape[0]})
+        
+        ticks = time.time()
+        if (i)%50 == 0: 
+            total_loss = sess.run(loss, feed_dict={x:X[300:350],y:Y_1[300:350],num_wave:np.mat(X[300:350]).shape[0]})
+            total_loss2 = sess.run(loss, feed_dict={x:X[200+0:200+75],y:Y_1[200+0:200+75],num_wave:np.mat(X[200+0:200+75]).shape[0]})
+            print("After %d step,loss is %g xunlian loss is %g  time use %g"%(i,total_loss,total_loss2,ticks-ticks1))
+            data1.write(str(total_loss))
+            data1.write('\n')
+            data2.write(str(ticks-ticks1))
+            data2.write('\n')
+            data3.write(str(total_loss2))
+            data3.write('\n')
+        if (i+1)%500 == 0:
+            total_y_cov = sess.run(deconv_6, feed_dict={x:X[300:350],y:Y_1[300:350],num_wave:np.mat(X[300:350]).shape[0]})  
+            np.savetxt(r'/home/yisicheng/Documents/downConv/20210411/100-300/lfm/lfm10g-lfm20g/num75/net_out_%d.txt'%(i),total_y_cov,fmt="%g", delimiter=',')
+
+    
+data1.close()
+data2.close()
+data3.close()
